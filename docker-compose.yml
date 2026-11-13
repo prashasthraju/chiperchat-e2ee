@@ -1,0 +1,22 @@
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cipherchat-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cipherchat
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cipherchat_dev_password}
+      POSTGRES_DB: cipherchat
+    ports:
+    - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cipherchat -d cipherchat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
