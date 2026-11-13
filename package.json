@@ -1,4 +1,3 @@
-
 {
   "name": "chiperchat-e2ee",
   "version": "1.0.0",
@@ -11,7 +10,10 @@
   "scripts": {
     "dev:web": "npm run dev --workspace=apps/web",
     "build:web": "npm run build --workspace=apps/web",
-    "test": "echo \"Tests will be configured later\""
+    "test": "echo \"Tests will be configured later\"",
+    "build:packages": "npm run build --workspace=@cipherchat/shared && npm run build --workspace=@cipherchat/crypto",
+    "dev:server": "npm run dev --workspace=server",
+    "e2e": "npm run e2e --workspace=@cipherchat/crypto"
   },
   "repository": {
     "type": "git",
@@ -25,4 +27,3 @@
   "author": "",
   "license": "ISC"
 }
-
