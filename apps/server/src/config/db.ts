@@ -1,13 +1,14 @@
 import pg from "pg";
+import { env } from "./env.js";
 
 const { Pool } = pg;
 
 export const pool = new Pool({
-  host: "localhost",
-  port: 5433,
+  host: env.POSTGRES_HOST,
+  port: env.POSTGRES_PORT,
   database: "cipherchat",
   user: "cipherchat",
-  password: process.env.POSTGRES_PASSWORD,
+  password: env.POSTGRES_PASSWORD,
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000
