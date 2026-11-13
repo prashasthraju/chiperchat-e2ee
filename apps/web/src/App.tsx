@@ -1,63 +1,61 @@
-
 import { useEffect, useState } from "react";
-import { socket } from "./lib/socket";
+import { AuthForm } from "./components/AuthForm";
+import { Chat } from "./components/Chat";
+import { KeyProblem } from "./components/KeyProblem";
+import { ApiError, fetchMe } from "./lib/api";
+import { clearSession, loadSession, saveSession, type Session } from "./lib/session";
+import { useCipherChat } from "./lib/useCipherChat";
+
+function Authenticated({ session, onSignOut }: { session: Session; onSignOut: () => void }) {
+  const state = useCipherChat(session);
+
+  if (state.phase === "error") {
+    return <KeyProblem session={session} error={state.error} onSignOut={onSignOut} />;
+  }
+  if (state.phase === "starting") {
+    return <main className="auth"><p className="muted">Setting up encryption keys…</p></main>;
+  }
+  return <Chat session={session} chat={state.chat} onSignOut={onSignOut} />;
+}
 
 function App() {
-  const [connected, setConnected] = useState(false);
-  const [message, setMessage] = useState("");
-  const [response, setResponse] = useState("");
+  const [session, setSession] = useState<Session | undefined>(loadSession);
+  const [checking, setChecking] = useState(() => loadSession() !== undefined);
 
+  // A stored token may have expired or its account may be gone.
   useEffect(() => {
-    socket.connect();
+    const stored = loadSession();
+    if (!stored) return;
 
-    socket.on("connect", () => {
-      setConnected(true);
-    });
-
-    socket.on("disconnect", () => {
-      setConnected(false);
-    });
-
-    socket.on("test:response", (data: { message: string }) => {
-      setResponse(data.message);
-    });
-
-    return () => {
-      socket.off("connect");
-      socket.off("disconnect");
-      socket.off("test:response");
-      socket.disconnect();
-    };
+    fetchMe(stored.token)
+      .catch((error: unknown) => {
+        if (error instanceof ApiError && error.status === 401) {
+          clearSession();
+          setSession(undefined);
+        }
+      })
+      .finally(() => setChecking(false));
   }, []);
 
-  const sendMessage = () => {
-    if (!message.trim()) return;
+  function signOut() {
+    clearSession();
+    setSession(undefined);
+  }
 
-    socket.emit("test:message", message);
-    setMessage("");
-  };
-
-  return (
-    <div style={{ padding: "40px", fontFamily: "sans-serif" }}>
-      <h1>CipherChat</h1>
-
-      <p>
-        Server status: {connected ? "Connected" : "Disconnected"}
-      </p>
-
-      <input
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="Enter a test message"
+  if (checking) {
+    return <main className="auth"><p className="muted">Loading…</p></main>;
+  }
+  if (!session) {
+    return (
+      <AuthForm
+        onAuthenticated={(next) => {
+          saveSession(next);
+          setSession(next);
+        }}
       />
-
-      <button onClick={sendMessage}>
-        Send
-      </button>
-
-      <p>Server response: {response}</p>
-    </div>
-  );
+    );
+  }
+  return <Authenticated session={session} onSignOut={signOut} />;
 }
 
 export default App;
